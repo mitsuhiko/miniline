@@ -1,0 +1,26 @@
+[package]
+name = "miniline"
+version = "0.1.0"
+authors = [
+    "Armin Ronacher <armin.ronacher@active-4.com>",
+    "Katsu Kawakami <kkawa1570@gmail.com>",
+]
+edition = "2021"
+rust-version = "1.78"
+description = "A dependency free, minimal readline implementation derived from rustyline"
+repository = "https://github.com/mitsuhiko/miniline"
+keywords = ["readline"]
+license = "MIT"
+categories = ["command-line-interface"]
+readme = "README.md"
+
+[dependencies]
+unicode-segmentation = { version = "1.12", optional = true }
+unicode-width = { version = "0.2", optional = true }
+
+[features]
+default = []
+# Use the unicode-segmentation and unicode-width crates for accurate
+# grapheme clustering and display width calculations.  Without these
+# a small built-in approximation is used.
+unicode = ["unicode-segmentation", "unicode-width"]
