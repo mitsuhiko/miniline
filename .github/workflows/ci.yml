@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, ${{ matrix.features }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        features: [default, unicode]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test
+        shell: bash
+        run: |
+          if [ "${{ matrix.features }}" = "default" ]; then
+            cargo test
+          else
+            cargo test --features ${{ matrix.features }}
+          fi
+
+  msrv:
+    name: MSRV (1.78)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.78.0
+      - name: Pin dependencies compatible with the MSRV
+        run: |
+          cargo generate-lockfile
+          cargo update -p unicode-segmentation --precise 1.12.0
+      - name: Test
+        run: |
+          cargo test
+          cargo test --features unicode
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+          targets: x86_64-pc-windows-gnu, x86_64-apple-darwin, wasm32-wasip1
+      - name: Rustfmt
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: |
+          for target in x86_64-unknown-linux-gnu x86_64-pc-windows-gnu x86_64-apple-darwin wasm32-wasip1; do
+            echo "::group::$target"
+            cargo clippy --all-targets --target $target -- -D warnings
+            cargo clippy --all-targets --target $target --features unicode -- -D warnings
+            echo "::endgroup::"
+          done
+      - name: Docs
+        run: cargo doc --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
